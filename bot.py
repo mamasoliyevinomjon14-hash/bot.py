@@ -1036,11 +1036,12 @@ async def admin_panel_callback(update, context):
             if user_id != SUPER_ADMIN:
                 await api_call(lambda: query.answer("⛔", show_alert=True), action_desc="ra_d")
                 return
-            others = [a for a in await get_admins() if a != SUPER_ADMIN]
+            admins_list = await get_admins()
+            others = [a for a in admins_list if a != SUPER_ADMIN]
             if not others:
                 await api_call(lambda: query.message.edit_text("Boshqa admin yo'q", reply_markup=back_keyboard()), action_desc="ra_e")
                 return
-            await api_call(lambda: query.message.edit_text("🚫 O'chirish:", reply_markup=admin_list_keyboard(await get_admins())), action_desc="ra_l")
+            await api_call(lambda: query.message.edit_text("🚫 O'chirish:", reply_markup=admin_list_keyboard(admins_list)), action_desc="ra_l")
             return
         if data == "admin_add_money":
             context.user_data["state"] = "add_money"
@@ -1179,21 +1180,22 @@ async def admin_panel_callback(update, context):
             aid = int(data.split(":", 1)[1])
             if await remove_admin_db(aid):
                 await api_call(lambda: query.answer("✅"), action_desc="ra_a")
-                others = [a for a in await get_admins() if a != SUPER_ADMIN]
+                admins_list = await get_admins()
+                others = [a for a in admins_list if a != SUPER_ADMIN]
                 if not others:
                     await api_call(lambda: query.message.edit_text("Yo'q", reply_markup=back_keyboard()), action_desc="ra_ne")
                 else:
-                    await api_call(lambda: query.message.edit_text("🚫", reply_markup=admin_list_keyboard(await get_admins())), action_desc="ra_nl")
+                    await api_call(lambda: query.message.edit_text("🚫", reply_markup=admin_list_keyboard(admins_list)), action_desc="ra_nl")
             return
         if data.startswith("delpromo:"):
             pid = int(data.split(":", 1)[1])
             await delete_promocode(pid)
             await api_call(lambda: query.answer("✅"), action_desc="dp_a")
-            await api_call(lambda: query.message.edit_text("🎟:", reply_markup=promo_list_keyboard(await get_all_promocodes())), action_desc="dp_e")
+            promos_list = await get_all_promocodes()
+            await api_call(lambda: query.message.edit_text("🎟:", reply_markup=promo_list_keyboard(promos_list)), action_desc="dp_e")
             return
     except Exception:
-        logger.exception("admin_panel xato")
-# ========================================================
+        logger.exception("admin_panel xato")# ========================================================
 #  ADMIN MATN STATE, ASOSIY BUTTONLAR, ERROR HANDLER, MAIN
 # ========================================================
 
