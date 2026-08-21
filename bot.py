@@ -1195,7 +1195,8 @@ async def admin_panel_callback(update, context):
             await api_call(lambda: query.message.edit_text("🎟:", reply_markup=promo_list_keyboard(promos_list)), action_desc="dp_e")
             return
     except Exception:
-        logger.exception("admin_panel xato")# ========================================================
+        logger.exception("admin_panel xato")
+# ========================================================
 #  ADMIN MATN STATE, ASOSIY BUTTONLAR, ERROR HANDLER, MAIN
 # ========================================================
 
@@ -1406,14 +1407,29 @@ async def error_handler(update, context):
     logger.error("Xato: %s", err, exc_info=err)
 
 
+# === Muhim o'zgarish shu yerda ===
+async def post_init(application):
+    """Baza asinxron tarzda bot bilan birga ishga tushadi va event loop yopilib qolmaydi"""
+    await init_db()
+
+
 def main():
     if not TOKEN:
         print("❌ BOT_TOKEN yo'q!")
         return
-    asyncio.run(init_db())
+        
     request = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0, write_timeout=20.0, pool_timeout=20.0)
     get_updates_request = HTTPXRequest(connect_timeout=20.0, read_timeout=30.0, write_timeout=20.0, pool_timeout=20.0)
-    app = (ApplicationBuilder().token(TOKEN).request(request).get_updates_request(get_updates_request).build())
+    
+    app = (
+        ApplicationBuilder()
+        .token(TOKEN)
+        .request(request)
+        .get_updates_request(get_updates_request)
+        .post_init(post_init)  # Shunda event loop xatosi butunlay yo'qoladi!
+        .build()
+    )
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(check_sub_callback, pattern="^check_sub$"))
     app.add_handler(CallbackQueryHandler(refresh_ref_callback, pattern="^refresh_ref$"))
@@ -1423,6 +1439,7 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_panel_callback, pattern="^(admin_|maint_|bonus_|rmch:|rmadm:|delpromo:|set_pay_channel|leave_)"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
     app.add_error_handler(error_handler)
+    
     print("🚀 Bot ishga tushdi!")
     app.run_polling(drop_pending_updates=True, allowed_updates=["message", "callback_query"])
 
