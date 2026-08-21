@@ -240,6 +240,14 @@ async def remove_admin_db(user_id):
     return True
 
 
+async def get_current_owner():
+    async with aiosqlite.connect(DB_PATH) as db:
+        # Bazadagi eng birinchi qo'shilgan admin bu Asosiy Ega hisoblanadi
+        cursor = await db.execute('SELECT user_id FROM admins ORDER BY added_at ASC LIMIT 1')
+        row = await cursor.fetchone()
+        return row[0] if row else SUPER_ADMIN
+
+
 async def get_setting(key, default=None):
     cached = get_settings_cached(key)
     if cached is not None:
@@ -510,8 +518,9 @@ def subscription_keyboard(channels):
 
 
 def admin_panel_keyboard():
-    # Adminlar qo'shish va ayirish tugmalari qirqib olindi
     return InlineKeyboardMarkup([
+        [InlineKeyboardButton("➕ Admin qo'shish", callback_data="admin_add_admin"),
+         InlineKeyboardButton("➖ Admin o'chirish", callback_data="admin_remove_admin")],
         [InlineKeyboardButton("➕ Kanal qo'shish", callback_data="admin_add_channel"),
          InlineKeyboardButton("➖ Kanal o'chirish", callback_data="admin_remove_channel")],
         [InlineKeyboardButton("📋 Kanallar ro'yxati", callback_data="admin_list_channels")],
@@ -672,8 +681,6 @@ async def start(update, context):
                         text=f"🎉 *Yangi do'st qo'shildi!*\n💰 *+{ref_price:,.0f} so'm*",
                         parse_mode="Markdown"), action_desc="ref_notify")
         else:
-            # Agar eski foydalanuvchi referal orqali kirsa, biroq avval referali yo'q bo'lsa.
-            # Shuni hisobiga siz xohlagandek eski userlar ham bir marta referaldan pul keltiradi.
             if referrer_id and referrer_id != user_id:
                 current_ref = user[2]
                 if current_ref is None:
@@ -853,8 +860,6 @@ async def handle_payment_channel(update, context, user_id):
         await api_call(lambda: update.message.reply_text("💳 Kanal yo'q."), action_desc="pc_e")
         return
     cid, name, desc = pc
-    # Qotib qolishni oldini olish uchun bu yerdan Markdown ob tashlandi. 
-    # Chunki admin tavsifda belgi yozib qoysa pars qila olmay xato beradi va jim qotib qoladi.
     text = f"💳 {name}\n{DIVIDER}\n{desc}\n\n👉 {cid}"
     await api_call(lambda: update.message.reply_text(
         text,
@@ -1089,7 +1094,6 @@ async def withdraw_admin_decision_callback(update, context):
             return
         w_id, target, amount, ctype, cnum, status = row
         
-        # Holatlarni tekshirish qismi
         if status not in ("pending", "approved"):
             await api_call(lambda: query.answer("ℹ️ Bu amal bajarilgan", show_alert=True), action_desc="wd_dn")
             return
@@ -1111,7 +1115,6 @@ async def withdraw_admin_decision_callback(update, context):
             except:
                 new_text = (query.message.text or "") + "\n\n✅ To'lov qilindi"
             await api_call(lambda: query.message.edit_text(new_text, parse_mode=ParseMode.MARKDOWN), action_desc="wd_pe")
-            # Shu yerdagina foydalanuvchiga yuboriladi
             await api_call(lambda: context.bot.send_message(
                 chat_id=target,
                 text="Pulingiz muvafaqqiyatli tushurildi 🏦",
@@ -1163,6 +1166,45 @@ async def admin_panel_callback(update, context):
         if data == "admin_close":
             await api_call(lambda: query.message.delete(), action_desc="ad_x")
             return
+
+        if data == "admin_add_admin":
+            owner_id = await get_current_owner()
+            if user_id != owner_id:
+                await api_call(lambda: query.answer("⛔ Bu tugma faqat bot egasi uchun! Egalik sizga o'tmaguncha admin qo'sha olmaysiz.", show_alert=True), action_desc="aa_denied")
+                return
+            context.user_data["state"] = "add_admin"
+            await api_call(lambda: query.message.edit_text("➕ *Admin qo'shish*\n\nYangi adminning ID raqamini kiriting:", parse_mode=ParseMode.MARKDOWN), action_desc="aa_p")
+            await api_call(lambda: query.message.chat.send_message("👇", reply_markup=cancel_keyboard()), action_desc="aa_kb")
+            return
+
+        if data == "admin_remove_admin":
+            owner_id = await get_current_owner()
+            if user_id != owner_id:
+                await api_call(lambda: query.answer("⛔ Bu tugma faqat bot egasi uchun! Egalik sizga o'tmaguncha admin o'chira olmaysiz.", show_alert=True), action_desc="ra_denied")
+                return
+            admins = await get_admins()
+            if len(admins) <= 1:
+                await api_call(lambda: query.answer("⚠️ Boshqa admin yo'q!", show_alert=True), action_desc="ra_empty")
+                return
+            rows = []
+            for adm in admins:
+                if adm != owner_id:
+                    rows.append([InlineKeyboardButton(f"🗑 Admin ({adm})", callback_data=f"rmadm:{adm}")])
+            rows.append([InlineKeyboardButton("‹ Orqaga", callback_data="admin_back")])
+            await api_call(lambda: query.message.edit_text("➖ O'chirish uchun adminni tanlang:", reply_markup=InlineKeyboardMarkup(rows)), action_desc="ra_p")
+            return
+
+        if data.startswith("rmadm:"):
+            owner_id = await get_current_owner()
+            if user_id != owner_id:
+                await api_call(lambda: query.answer("⛔ Faqat asosiy ega o'chira oladi!", show_alert=True), action_desc="rma_denied")
+                return
+            target_id = int(data.split(":")[1])
+            await remove_admin_db(target_id)
+            await api_call(lambda: query.answer("✅ Admin o'chirildi", show_alert=True), action_desc="rma_ok")
+            await open_admin_panel(query, edit=True)
+            return
+
         if data == "admin_back":
             await open_admin_panel(query, edit=True)
             return
@@ -1364,6 +1406,22 @@ async def handle_admin_text_state(update, context, user_id, text):
         await api_call(lambda: update.message.reply_text(f"✅ Bot yangi egasiga ({new_owner_id}) o'tkazildi va siz egallikdan chiqdingiz.", reply_markup=ReplyKeyboardRemove()))
         try:
             await api_call(lambda: context.bot.send_message(chat_id=new_owner_id, text=f"🎉 Siz botning yangi egasi bo'ldingiz! /start bosib menyuni yangilang."))
+        except:
+            pass
+        return True
+
+    if state == "add_admin":
+        context.user_data["state"] = None
+        try:
+            new_admin_id = int(text.strip())
+        except ValueError:
+            await api_call(lambda: update.message.reply_text("❌ Noto'g'ri ID format. ID faqat raqamlardan iborat bo'lishi kerak.", reply_markup=main_keyboard(user_id)))
+            return True
+        
+        await add_admin_db(new_admin_id)
+        await api_call(lambda: update.message.reply_text(f"✅ Yangi admin qo'shildi: {new_admin_id}", reply_markup=main_keyboard(user_id)))
+        try:
+            await api_call(lambda: context.bot.send_message(chat_id=new_admin_id, text="🎉 Sizga admin huquqi berildi! /start bosib menyuni yangilang."))
         except:
             pass
         return True
