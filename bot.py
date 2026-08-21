@@ -1407,9 +1407,8 @@ async def error_handler(update, context):
     logger.error("Xato: %s", err, exc_info=err)
 
 
-# === Muhim o'zgarish shu yerda ===
 async def post_init(application):
-    """Baza asinxron tarzda bot bilan birga ishga tushadi va event loop yopilib qolmaydi"""
+    """Baza asinxron tarzda bot bilan bitta muhitda (loop) ochiladi"""
     await init_db()
 
 
@@ -1426,7 +1425,7 @@ def main():
         .token(TOKEN)
         .request(request)
         .get_updates_request(get_updates_request)
-        .post_init(post_init)  # Shunda event loop xatosi butunlay yo'qoladi!
+        .post_init(post_init)  # DB shu yerda xavfsiz ochiladi
         .build()
     )
     
