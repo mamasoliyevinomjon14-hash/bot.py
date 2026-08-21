@@ -15,7 +15,7 @@ from telegram import (
     ReplyKeyboardRemove,
     KeyboardButton,
 )
-from telegram.constants import ChatAction, ParseMode
+from telegram.constants import ChatAction
 from telegram.error import TelegramError, TimedOut, NetworkError, Forbidden
 from telegram.ext import (
     ApplicationBuilder,
@@ -51,7 +51,7 @@ DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
 CARD_TYPES = ["HUMO", "UZCARD", "Boshqa"]
 
 # ========================================================
-#  CACHE
+#  CACHE TIZIMI
 # ========================================================
 
 _sub_cache = {}
@@ -110,7 +110,7 @@ def clear_settings_cache(key=None):
 
 
 # ========================================================
-#  API CALL
+#  XAVFSIZ API CHAQIRUV WRAPPERI
 # ========================================================
 
 async def api_call(coro_factory, *, retries=NET_RETRIES, base_delay=NET_BASE_DELAY,
@@ -138,7 +138,7 @@ async def api_call(coro_factory, *, retries=NET_RETRIES, base_delay=NET_BASE_DEL
         raise last_exc
     return default
 # ========================================================
-#  BAZA FUNKSIYALARI
+#  BAZA BILAN ISHLASH FUNKSIYALARI
 # ========================================================
 
 async def init_db():
@@ -397,7 +397,7 @@ async def set_payment_channel(channel_id, channel_name, description):
         await db.execute('INSERT INTO payment_channels (channel_id, channel_name, description) VALUES (?, ?, ?)', (channel_id, channel_name, description))
         await db.commit()
 # ========================================================
-#  OBUNANI TEKSHIRISH VA KLAVIATURALAR
+#  OBUNANI TEKSHIRISH VA TIZIM KLAVIATURALARI
 # ========================================================
 
 async def check_one_channel(context, channel_id, user_id):
@@ -561,12 +561,12 @@ async def show_subscription_gate(update, context):
     if not channels:
         return
     await api_call(lambda: update.effective_chat.send_message(
-        "🔐 *Kirish cheklangan*", parse_mode=ParseMode.MARKDOWN, reply_markup=ReplyKeyboardRemove()), action_desc="g1")
+        "🔐 *Kirish cheklangan*", parse_mode="Markdown", reply_markup=ReplyKeyboardRemove()), action_desc="g1")
     await api_call(lambda: update.effective_chat.send_message(
         f"⚡️ *Kanal(lar)ga a'zo bo'ling:*\n{DIVIDER}",
-        parse_mode=ParseMode.MARKDOWN, reply_markup=subscription_keyboard(channels)), action_desc="g2")
+        parse_mode="Markdown", reply_markup=subscription_keyboard(channels)), action_desc="g2")
 # ========================================================
-#  START, PUL ISHLASH, BALANS, BONUS, PROMO, MUROJAAT
+#  ASOSIY FOYDALANUVCHI FUNKSIYALARI
 # ========================================================
 
 async def start(update, context):
@@ -576,7 +576,7 @@ async def start(update, context):
         user_id = update.effective_user.id
 
         if _bot_maintenance and user_id != SUPER_ADMIN:
-            await api_call(lambda: update.message.reply_text(_bot_maintenance_msg, parse_mode=ParseMode.MARKDOWN), action_desc="maint")
+            await api_call(lambda: update.message.reply_text(_bot_maintenance_msg, parse_mode="Markdown"), action_desc="maint")
             return
 
         if context.user_data.get("left_ownership"):
@@ -585,7 +585,7 @@ async def start(update, context):
                 await create_user(user_id, None)
             await api_call(lambda: update.message.reply_text(
                 f"👋 Xush kelibsiz, *{update.effective_user.first_name}*!\n\n🚪 Siz egallikdan chiqdingiz.\n{DIVIDER}",
-                parse_mode=ParseMode.MARKDOWN, reply_markup=main_keyboard(user_id)), action_desc="left")
+                parse_mode="Markdown", reply_markup=main_keyboard(user_id)), action_desc="left")
             return
 
         if not await is_subscribed(user_id, context):
@@ -610,7 +610,7 @@ async def start(update, context):
                     await api_call(lambda: context.bot.send_message(
                         chat_id=referrer_id,
                         text=f"🎉 *Yangi do'st qo'shildi!*\n💰 *+{ref_price:,.0f} so'm*",
-                        parse_mode=ParseMode.MARKDOWN), action_desc="ref_notify")
+                        parse_mode="Markdown"), action_desc="ref_notify")
 
         await api_call(lambda: context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING), action_desc="typing")
@@ -621,7 +621,7 @@ async def start(update, context):
             f"🤖 Do'stlaringizni taklif qilib pul ishlang!\n"
             f"💰 Bonus, promokod, to'lov kanali\n"
             f"💸 Pulni kartangizga yechib oling\n{DIVIDER}",
-            reply_markup=main_keyboard(user_id), parse_mode=ParseMode.MARKDOWN), action_desc="start_r")
+            reply_markup=main_keyboard(user_id), parse_mode="Markdown"), action_desc="start_r")
     except Exception:
         logger.exception("start xato")
 
@@ -643,7 +643,7 @@ async def check_sub_callback(update, context):
             await api_call(lambda: context.bot.send_message(
                 chat_id=query.message.chat.id,
                 text=f"✅ Obuna tasdiqlandi!\n{DIVIDER}\n👇 Menyudan tanlang:",
-                parse_mode=ParseMode.MARKDOWN, reply_markup=main_keyboard(user_id)), action_desc="main")
+                parse_mode="Markdown", reply_markup=main_keyboard(user_id)), action_desc="main")
         else:
             await api_call(lambda: query.answer("❌ Hali obuna bo'lmadingiz!", show_alert=True), action_desc="ck_fail")
     except Exception:
@@ -666,7 +666,7 @@ async def handle_earn(update, context, user_id):
         f"💵 Har bir do'st: *{ref_price:,.0f} so'm*\n{DIVIDER}\n📤 Ulashing!"
     )
     await api_call(lambda: placeholder.edit_text(
-        text, parse_mode=ParseMode.MARKDOWN, reply_markup=share_keyboard(ref_link)), action_desc="earn_e")
+        text, parse_mode="Markdown", reply_markup=share_keyboard(ref_link)), action_desc="earn_e")
 
 
 async def refresh_ref_callback(update, context):
@@ -681,7 +681,7 @@ async def refresh_ref_callback(update, context):
         ref_link = f"https://t.me/{bot_info.username}?start={user_id}"
         text = f"🚀 *Taklif havolangiz:*\n`{ref_link}`\n\n💵 *{ref_price:,.0f} so'm*"
         await api_call(lambda: query.message.edit_text(
-            text, parse_mode=ParseMode.MARKDOWN, reply_markup=share_keyboard(ref_link)), action_desc="ref_e")
+            text, parse_mode="Markdown", reply_markup=share_keyboard(ref_link)), action_desc="ref_e")
     except Exception:
         logger.exception("refresh xato")
 
@@ -691,20 +691,20 @@ async def handle_balance(update, user_id):
     user = await get_user(user_id)
     balance = user[1] if user else 0.0
     await api_call(lambda: update.message.reply_text(
-        f"💳 *Balans:* *{balance:,.0f} so'm*", parse_mode=ParseMode.MARKDOWN), action_desc="bal")
+        f"💳 *Balans:* *{balance:,.0f} so'm*", parse_mode="Markdown"), action_desc="bal")
 
 
 async def handle_stats(update):
     count, total = await get_stats()
     await api_call(lambda: update.message.reply_text(
         f"📊 *Statistika*\n{DIVIDER}\n👤 *{count}* ta foydalanuvchi\n💰 *{total:,.0f} so'm*",
-        parse_mode=ParseMode.MARKDOWN), action_desc="stats")
+        parse_mode="Markdown"), action_desc="stats")
 
 
 async def handle_bonus(update, context, user_id):
     enabled = await get_setting("bonus_enabled", "1")
     if enabled != "1":
-        await api_call(lambda: update.message.reply_text("❌ Bonus o'chirilgan.", parse_mode=ParseMode.MARKDOWN), action_desc="b_off")
+        await api_call(lambda: update.message.reply_text("❌ Bonus o'chirilgan.", parse_mode="Markdown"), action_desc="b_off")
         return
     last = await last_bonus_claim(user_id)
     interval = int(await get_setting("bonus_interval", "86400"))
@@ -717,7 +717,7 @@ async def handle_bonus(update, context, user_id):
                 hours = int(remaining.total_seconds() // 3600)
                 minutes = int((remaining.total_seconds() % 3600) // 60)
                 await api_call(lambda: update.message.reply_text(
-                    f"⏰ Keyingi bonus: *{hours}s {minutes}m* dan so'ng", parse_mode=ParseMode.MARKDOWN), action_desc="b_wait")
+                    f"⏰ Keyingi bonus: *{hours}s {minutes}m* dan so'ng", parse_mode="Markdown"), action_desc="b_wait")
                 return
         except:
             pass
@@ -727,13 +727,13 @@ async def handle_bonus(update, context, user_id):
     await add_bonus_claim(user_id, amount)
     cache_clear_sub(user_id)
     await api_call(lambda: update.message.reply_text(
-        f"🎁 *Tabriklaymiz!*\n💰 *+{amount} so'm* bonus!", parse_mode=ParseMode.MARKDOWN), action_desc="b_done")
+        f"🎁 *Tabriklaymiz!*\n💰 *+{amount} so'm* bonus!", parse_mode="Markdown"), action_desc="b_done")
 
 
 async def handle_promo_start(update, context, user_id):
     context.user_data["state"] = "enter_promo"
     await api_call(lambda: update.message.reply_text(
-        "🎟 *Promokodni kiriting:*", parse_mode=ParseMode.MARKDOWN, reply_markup=cancel_keyboard()), action_desc="pr_p")
+        "🎟 *Promokodni kiriting:*", parse_mode="Markdown", reply_markup=cancel_keyboard()), action_desc="pr_p")
 
 
 async def handle_promo_state(update, context, user_id, text):
@@ -758,19 +758,19 @@ async def handle_promo_state(update, context, user_id, text):
         await add_balance(user_id, amount)
         cache_clear_sub(user_id)
         await api_call(lambda: update.message.reply_text(
-            f"🎉 *+{amount:,.0f} so'm!*", parse_mode=ParseMode.MARKDOWN, reply_markup=main_keyboard(user_id)), action_desc="pr_ok")
+            f"🎉 *+{amount:,.0f} so'm!*", parse_mode="Markdown", reply_markup=main_keyboard(user_id)), action_desc="pr_ok")
     return True
 
 
 async def handle_payment_channel(update, context, user_id):
     pc = await get_payment_channel()
     if not pc:
-        await api_call(lambda: update.message.reply_text("💳 Kanal yo'q.", parse_mode=ParseMode.MARKDOWN), action_desc="pc_e")
+        await api_call(lambda: update.message.reply_text("💳 Kanal yo'q.", parse_mode="Markdown"), action_desc="pc_e")
         return
     cid, name, desc = pc
     await api_call(lambda: update.message.reply_text(
         f"💳 *{name}*\n{DIVIDER}\n{desc}\n\n👉 {cid}",
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📢 O'tish", url=f"https://t.me/{cid.replace('@', '')}")]])), action_desc="pc_s")
 
 
@@ -778,7 +778,7 @@ async def handle_support_start(update, context, user_id):
     context.user_data["state"] = "support_message"
     await api_call(lambda: update.message.reply_text(
         f"☎️ *Murojaat*\n{DIVIDER}\nXabaringizni yozing:",
-        parse_mode=ParseMode.MARKDOWN, reply_markup=cancel_keyboard()), action_desc="sup_p")
+        parse_mode="Markdown", reply_markup=cancel_keyboard()), action_desc="sup_p")
 
 
 async def handle_support_state(update, context, user_id, text):
@@ -796,10 +796,10 @@ async def handle_support_state(update, context, user_id, text):
     for aid in admins:
         await api_call(lambda a=aid: context.bot.send_message(
             chat_id=a,
-            text=f"☎️ *Murojaat!*\n{DIVIDER}\n👤 {user_info.full_name} {uname}\n🆔 `{user_info.id}`\n{DIVIDER}\n💬 {text}\n\n📋 ID: `{sid}`",
-            parse_mode=ParseMode.MARKDOWN, reply_markup=support_answer_keyboard(sid)), action_desc=f"sup_a:{aid}")
+            text=f"☎️ *Yangi murojaat!*\n{DIVIDER}\n👤 {user_info.full_name} {uname}\n🆔 `{user_info.id}`\n{DIVIDER}\n💬 {text}\n\n📋 ID: `{sid}`",
+            parse_mode="Markdown", reply_markup=support_answer_keyboard(sid)), action_desc=f"sup_a:{aid}")
     await api_call(lambda: update.message.reply_text(
-        "✅ *Yuborildi!*\nAdmin tez orada javob beradi.", parse_mode=ParseMode.MARKDOWN, reply_markup=main_keyboard(user_id)), action_desc="sup_ok")
+        "✅ *Yuborildi!*\nAdmin tez orada javob beradi.", parse_mode="Markdown", reply_markup=main_keyboard(user_id)), action_desc="sup_ok")
     return True
 
 
@@ -812,7 +812,7 @@ async def support_answer_callback(update, context):
     sid = int(query.data.split(":")[1])
     context.user_data["state"] = "support_reply"
     context.user_data["support_reply_sid"] = sid
-    await api_call(lambda: query.message.edit_text("✍️ *Javobingizni yozing:*", parse_mode=ParseMode.MARKDOWN), action_desc="sa_p")
+    await api_call(lambda: query.message.edit_text("✍️ *Javobingizni yozing:*", parse_mode="Markdown"), action_desc="sa_p")
     await api_call(lambda: query.message.chat.send_message("👇", reply_markup=cancel_keyboard()), action_desc="sa_kb")
 
 
@@ -835,11 +835,11 @@ async def handle_support_reply_state(update, context, user_id, text):
     await api_call(lambda: context.bot.send_message(
         chat_id=target,
         text=f"💬 *Admin javobi:*\n{DIVIDER}\n{text}",
-        parse_mode=ParseMode.MARKDOWN, reply_markup=main_keyboard(target)), action_desc="sr_s")
+        parse_mode="Markdown", reply_markup=main_keyboard(target)), action_desc="sr_s")
     await api_call(lambda: update.message.reply_text("✅ Yuborildi!", reply_markup=main_keyboard(user_id)), action_desc="sr_ok")
     return True
 # ========================================================
-#  PUL YECHISH LOGIKASI
+#  PUL YECHISH TIZIMI
 # ========================================================
 
 async def handle_withdraw_start(update, context, user_id):
@@ -970,7 +970,7 @@ async def handle_wd_reject_reason(update, context, user_id, text):
     await api_call(lambda: update.message.reply_text("✅ Yuborildi", reply_markup=main_keyboard(user_id)), action_desc="wr_d")
     return True
 # ========================================================
-#  ADMIN PANEL METODLARI
+#  ADMIN PANEL BOSHQARUVI
 # ========================================================
 
 async def open_admin_panel(target, edit=False):
@@ -987,7 +987,8 @@ async def admin_panel_callback(update, context):
     try:
         query = update.callback_query
         user_id = query.from_user.id
-        if user_id not in await get_admins():
+        admins_list = await get_admins()
+        if user_id not in admins_list:
             await api_call(lambda: query.answer("⛔", show_alert=True), action_desc="ad_d")
             return
         data = query.data
@@ -1036,7 +1037,6 @@ async def admin_panel_callback(update, context):
             if user_id != SUPER_ADMIN:
                 await api_call(lambda: query.answer("⛔", show_alert=True), action_desc="ra_d")
                 return
-            admins_list = await get_admins()
             others = [a for a in admins_list if a != SUPER_ADMIN]
             if not others:
                 await api_call(lambda: query.message.edit_text("Boshqa admin yo'q", reply_markup=back_keyboard()), action_desc="ra_e")
@@ -1163,7 +1163,7 @@ async def admin_panel_callback(update, context):
         if data == "leave_yes_3":
             context.user_data["left_ownership"] = True
             await api_call(lambda: query.message.edit_text("✅ Chiqdingiz!", parse_mode=ParseMode.MARKDOWN), action_desc="lvd")
-            for aid in await get_admins():
+            for aid in admins_list:
                 await api_call(lambda a=aid: context.bot.send_message(chat_id=a, text=f"⚠️ {query.from_user.full_name} chiqdi!", parse_mode=ParseMode.MARKDOWN), action_desc="lvn")
             return
         if data.startswith("rmch:"):
@@ -1191,13 +1191,12 @@ async def admin_panel_callback(update, context):
             pid = int(data.split(":", 1)[1])
             await delete_promocode(pid)
             await api_call(lambda: query.answer("✅"), action_desc="dp_a")
-            promos_list = await get_all_promocodes()
-            await api_call(lambda: query.message.edit_text("🎟:", reply_markup=promo_list_keyboard(promos_list)), action_desc="dp_e")
+            await api_call(lambda: query.message.edit_text("🎟:", reply_markup=promo_list_keyboard(await get_all_promocodes())), action_desc="dp_e")
             return
     except Exception:
         logger.exception("admin_panel xato")
 # ========================================================
-#  ADMIN MATN STATE, ASOSIY BUTTONLAR, ERROR HANDLER, MAIN
+#  ADMIN MATN STATE, ERROR HANDLER VA TIZIM MAIN STARTUP
 # ========================================================
 
 async def handle_admin_text_state(update, context, user_id, text):
@@ -1407,28 +1406,11 @@ async def error_handler(update, context):
     logger.error("Xato: %s", err, exc_info=err)
 
 
-async def post_init(application):
-    """Baza asinxron tarzda bot bilan bitta muhitda (loop) ochiladi"""
+async def main_async():
     await init_db()
-
-
-def main():
-    if not TOKEN:
-        print("❌ BOT_TOKEN yo'q!")
-        return
-        
     request = HTTPXRequest(connect_timeout=20.0, read_timeout=20.0, write_timeout=20.0, pool_timeout=20.0)
     get_updates_request = HTTPXRequest(connect_timeout=20.0, read_timeout=30.0, write_timeout=20.0, pool_timeout=20.0)
-    
-    app = (
-        ApplicationBuilder()
-        .token(TOKEN)
-        .request(request)
-        .get_updates_request(get_updates_request)
-        .post_init(post_init)  # DB shu yerda xavfsiz ochiladi
-        .build()
-    )
-    
+    app = (ApplicationBuilder().token(TOKEN).request(request).get_updates_request(get_updates_request).build())
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(check_sub_callback, pattern="^check_sub$"))
     app.add_handler(CallbackQueryHandler(refresh_ref_callback, pattern="^refresh_ref$"))
@@ -1438,9 +1420,33 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_panel_callback, pattern="^(admin_|maint_|bonus_|rmch:|rmadm:|delpromo:|set_pay_channel|leave_)"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
     app.add_error_handler(error_handler)
-    
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling(drop_pending_updates=True, allowed_updates=["message", "callback_query"])
     print("🚀 Bot ishga tushdi!")
-    app.run_polling(drop_pending_updates=True, allowed_updates=["message", "callback_query"])
+    try:
+        while True:
+            await asyncio.sleep(3600)
+    except (KeyboardInterrupt, SystemExit):
+        print("Bot to'xtatilmoqda...")
+    finally:
+        await app.updater.stop()
+        await app.stop()
+        await app.shutdown()
+
+
+def main():
+    if not TOKEN:
+        print("❌ BOT_TOKEN topilmadi!")
+        return
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(main_async())
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':
