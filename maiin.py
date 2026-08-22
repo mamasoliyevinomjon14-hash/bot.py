@@ -33,7 +33,7 @@ from telegram.request import HTTPXRequest
 #  SOZLAMALAR
 # ========================================================
 
-TOKEN = os.environ.get("BOT_TOKEN", "8856340901:AAHZOhvRkqztuguZ58AzzGg-gzPe_yld8L8")
+TOKEN = os.environ.get("BOT_TOKEN", "8856340901:AAEvMUbnqiRXQj--KyCgshF5syx0pWssUe4")
 SUPER_ADMIN = 8057184376
 
 DB_PATH = os.environ.get("DB_PATH", "bot_data.db")
